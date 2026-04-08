@@ -34,8 +34,11 @@ start_gateway() {
 }
 
 ensure_deps() {
+  local required=(python3 curl)
   local missing=()
-  for c in python3 curl; do
+  local c
+
+  for c in "${required[@]}"; do
     command -v "$c" >/dev/null 2>&1 || missing+=("$c")
   done
 
@@ -44,14 +47,67 @@ ensure_deps() {
   fi
 
   echo "⚠️ 缺少依赖: ${missing[*]}"
-  if command -v apt >/dev/null 2>&1; then
-    apt update -y >/dev/null 2>&1 || true
-    apt install -y python3 curl >/dev/null 2>&1 || true
+  echo "🔧 正在自动安装依赖..."
+
+  local installer=""
+  if command -v apt-get >/dev/null 2>&1; then
+    installer="apt"
   elif command -v dnf >/dev/null 2>&1; then
-    dnf install -y python3 curl >/dev/null 2>&1 || true
+    installer="dnf"
   elif command -v yum >/dev/null 2>&1; then
-    yum install -y python3 curl >/dev/null 2>&1 || true
+    installer="yum"
+  elif command -v zypper >/dev/null 2>&1; then
+    installer="zypper"
+  elif command -v apk >/dev/null 2>&1; then
+    installer="apk"
   fi
+
+  if [[ -z "$installer" ]]; then
+    echo "❌ 无法识别包管理器，请手动安装: ${missing[*]}"
+    return 1
+  fi
+
+  local run_prefix=()
+  if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
+    if command -v sudo >/dev/null 2>&1; then
+      run_prefix=(sudo)
+    else
+      echo "❌ 当前非 root 且没有 sudo，无法自动安装依赖: ${missing[*]}"
+      return 1
+    fi
+  fi
+
+  case "$installer" in
+    apt)
+      "${run_prefix[@]}" apt-get update -y
+      "${run_prefix[@]}" apt-get install -y python3 curl
+      ;;
+    dnf)
+      "${run_prefix[@]}" dnf install -y python3 curl
+      ;;
+    yum)
+      "${run_prefix[@]}" yum install -y python3 curl
+      ;;
+    zypper)
+      "${run_prefix[@]}" zypper --non-interactive refresh
+      "${run_prefix[@]}" zypper --non-interactive install python3 curl
+      ;;
+    apk)
+      "${run_prefix[@]}" apk add --no-cache python3 curl
+      ;;
+  esac
+
+  missing=()
+  for c in "${required[@]}"; do
+    command -v "$c" >/dev/null 2>&1 || missing+=("$c")
+  done
+
+  if (( ${#missing[@]} > 0 )); then
+    echo "❌ 依赖安装失败，请手动安装: ${missing[*]}"
+    return 1
+  fi
+
+  echo "✅ 依赖检查通过"
 }
 
 write_provider_models_from_ids() {
