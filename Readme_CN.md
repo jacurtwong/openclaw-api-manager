@@ -22,6 +22,10 @@ curl -fsSL https://raw.githubusercontent.com/jacurtwong/openclaw-api-manager/mai
 api
 ```
 
+## 鸣谢
+
+特别感谢 **kejilion**，本项目来源于 `kejilion.sh` 中 API 管理模块的提取与改造。
+
 ## 项目链接
 
 - 仓库：<https://github.com/jacurtwong/openclaw-api-manager>

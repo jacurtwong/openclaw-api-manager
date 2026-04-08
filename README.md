@@ -20,6 +20,10 @@ Then run directly:
 api
 ```
 
+## Acknowledgements
+
+Special thanks to **kejilion** — this project is extracted and adapted from the API management part of `kejilion.sh`.
+
 ## Links
 
 - Repo: <https://github.com/jacurtwong/openclaw-api-manager>
